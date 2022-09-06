@@ -1,0 +1,54 @@
+WT1 <- read.csv("WT1_count.csv",header = T,sep="\t")
+WT2 <- read.csv("WT2_counts.csv",header = T,sep="\t")
+m1 <- read.csv("mutant1_counts.csv",header = T,sep="\t")
+m2 <- read.csv("mutant2_counts.csv",header = T,sep="\t")
+####list.csv is all the transcript four counts files contain
+base <- read.csv("list.csv",header = T)
+matrix1 <- merge(base,WT1,by="transcript_name")
+matrix2 <- merge(matrix1,WT2,by="transcript_name")
+matrix3 <- merge(matrix2,m1,by="transcript_name")
+matrix4 <- merge(matrix3,m2,by="transcript_name")
+names(matrix4) <- c("transcript","WT1","WT2","M1","M2")
+
+######coldata is the condition of various data
+######	  condition
+######WT1	control
+######WT2	control
+######M1	KD
+######M2	KD
+
+coldata <- read.csv("coldata.csv",header=T)
+BiocManager::install("DESeq2")
+library("DESeq2")
+matrix4[is.na(matrix4)] <- 0
+rownames(matrix4)<-matrix4[,1]
+View(matrix4)
+matrix4<-matrix4[,-1]
+dds <- DESeqDataSetFromMatrix(round(matrix4), coldata, design= ~ condition )
+dds <- DESeq(dds)
+dmatrix <- results(dds)
+dmatrix <- as.data.frame(dmatrix)
+dmatrix <- na.omit(dmatrix)
+library(EnhancedVolcano)
+EnhancedVolcano(dmatrix,lab = rownames(dmatrix),x='logFC',y='PValue')
+View(dmatrix)
+EnhancedVolcano(dmatrix,lab = rownames(dmatrix),x='log2FoldChange',y='pvalue')
+dmatrix$log10P <- -(log10(dmatrix$pvalue))
+dmatrix <- subset(dmatrix,(dmatrix$log2FoldChange>=2 | dmatrix$log2FoldChange<=-2)& dmatrix$log10P>=5)
+library(tidyr)
+GN <- as.data.frame(dmatrix$X)
+colnames(GN) <- "GeneID"
+View(dmatrix)
+GN <- as.data.frame(rownames(matrix4))
+View(GN)
+GN <- as.data.frame(rownames(dmatrix))
+colnames(GN) <- "GeneID"
+GN <- separate(GN,GeneID,into = c("GeneID","x2"),sep = "\\.")
+GN <- as.data.frame(GN[,1])
+colnames(GN) <- "GeneID"
+View(GN)
+library(AnnotationHub)
+library(biomaRt)
+hub <- AnnotationHub::AnnotationHub()
+hub <- AnnotationHub::AnnotationHub()
+Triticum
